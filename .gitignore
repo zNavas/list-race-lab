@@ -1,0 +1,38 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build output/dist
+/dist/
+/build/
+
+# Editor and system files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE and editor config
+.vscode/
+.idea/
+*.iml
+
+# Temporary files
+*.swp
+*.swo
+
+# Cache and temp files
+.cache/
+.tmp/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+
+# Linting and formatting
+.eslintcache
+.prettiercache
+
+# Git-specific
+*.orig
