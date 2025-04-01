@@ -1,0 +1,113 @@
+### 📌 CONFIGURACIÓN DEL SERVIDOR CDN
+server {
+    # Puerto de escucha
+    # Acepta cualquier nombre de host o IP
+    server_name cdserverlab.duckdns.org;
+
+    ssl_certificate /etc/letsencrypt/live/cdserverlab.duckdns.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cdserverlab.duckdns.org/privkey.pem;
+
+    ### 📁 CONFIGURACIÓN DEL PROXY PARA IMÁGENES
+    location /images/ {
+        ### 🔄 CONEXIÓN CON AZURE STORAGE
+        # Redirecciona las peticiones al contenedor 'images' de Azure Blob Storage
+        proxy_pass https://fileslistracerc.blob.core.windows.net/images/;  
+        # Establece el encabezado Host para autenticación correcta
+        proxy_set_header Host fileslistracerc.blob.core.windows.net; 
+        #proxy_pass_header Server;# retorna al cliente el HTTP reader del backend              
+        
+        ### 💾 CONFIGURACIÓN DE CACHÉ
+        # Activar sistema de caché definido en nginx.conf
+        proxy_cache cdn_cache;
+        # Tiempo de caché según código de respuesta
+        proxy_cache_valid 200 302 60m;                                                      # Respuestas exitosas: 60 minutos
+        proxy_cache_valid 404 1m;                                                           # Errores 404: 1 minuto
+        proxy_cache_revalidate on;                                                          # Verificar con el backend si el contenido cambió
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;   # Usar caché antigua cuando el backend tenga problemas
+        proxy_cache_lock on;    # Evita múltiples solicitudes idénticas al backend, es decir, esto evita que varias solicitudes concurrentes para el mismo recurso vayan a Azure simultáneamente.
+        
+        ### ⏱️ CONTROL DE EXPIRACIÓN DE CONTENIDO
+        # Tiempo de expiración en navegadores: 1 día
+        expires 1d;
+        # Control detallado de caché
+        add_header Cache-Control "public, max-age=86400"; 
+        # Añade encabezado para monitorear el estado de la caché (HIT, MISS, BYPASS)
+        add_header X-Cache-Status $upstream_cache_status;          
+
+        # Si quieres cambiar el nombre del header Server
+        #more_set_headers "Server: CDN-Sistema-Distribuido"; 
+
+        ### 🔒 SEGURIDAD: ELIMINACIÓN DE ENCABEZADOS
+        # Ocultar encabezados específicos de Azure Storage
+        proxy_hide_header Server;
+        proxy_hide_header x-ms-request-id;
+        proxy_hide_header x-ms-version;
+        proxy_hide_header x-ms-lease-status;
+        proxy_hide_header x-ms-blob-type;
+        proxy_hide_header ETag;
+        proxy_hide_header Content-MD5;
+
+        # Elimina encabezados adicionales (requiere módulo headers-more)
+        more_clear_headers "Server" "X-Powered-By" "X-AspNet-Version" "X-AspNetMvc-Version" "X-Pingback";
+        
+        ### 🔒 ENCABEZADOS DE SEGURIDAD ADICIONALES
+        # Prevenir MIME-sniffing
+        add_header X-Content-Type-Options "nosniff";
+        # Protección contra clickjacking
+        add_header X-Frame-Options "SAMEORIGIN";
+         # Protección XSS para navegadores antiguos
+        add_header X-XSS-Protection "1; mode=block";
+        # Política de seguridad de contenido
+        add_header Content-Security-Policy "frame-ancestors 'none';";
+
+        # 🔹 Restringir acceso solo a HTTPS (si el sitio usa HTTPS)
+        #add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+        ### 📊 LOGS ESPECÍFICOS PARA ESTE LOCATION
+        access_log /var/log/nginx/azure_access.log azure_access;  
+    }
+
+    ### 🔄 MANEJO DE FAVICON.ICO
+    location = /favicon.ico {
+        log_not_found off;          # No registrar errores 404 para este recurso
+        access_log off;             # No registrar accesos a este recurso
+        return 204;                 # Devolver respuesta vacía exitosa
+    }
+
+    ### 🚫 RESTRICCIONES DE ACCESO A ARCHIVOS SENSIBLES
+    # Bloquea el acceso a directorios de control de versiones como .git
+    location ~ /\.git {
+        deny all;
+    }
+
+    # Bloquea el acceso a archivos de configuración sensibles
+    location ~ /(config\.php|wp-config\.php|\.env) {
+        deny all;
+    }
+
+    ### 🚨 BLOQUEO DE ESCANEOS AUTOMATIZADOS
+    # Rechaza solicitudes de bots de escaneo comunes
+    if ($http_user_agent ~* (masscan|l9explore)) {
+        return 403;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/cdserverlab.duckdns.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/cdserverlab.duckdns.org/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+
+server {
+    if ($host = cdserverlab.duckdns.org) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name cdserverlab.duckdns.org;
+    return 404; # managed by Certbot
+
+
+}

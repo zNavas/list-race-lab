@@ -15,6 +15,12 @@ El sitio está diseñado para ayudar a los usuarios a encontrar lugares como res
 ## 🏗️ Estructura del Proyecto  
 
 ```bash
+📂 configs (Carpeta general de configuraciones para servidores y herramientas)
+│── 📂 nginx/ (Configuración de Nginx)
+   │── 📂 conf.d/ (Archivos de configuración adicionales de Nginx)
+       │── 📜 nginx.conf (Archivo principal de configuración de Nginx)
+       │── 📂 sites-available/
+            │── 📜 cdn-config (Configuración específica del proxy inverso)
 📂 src
 │── 📂 assets              # Recursos del sitio web
 │   │── 📂 css             # Archivos de estilos
