@@ -56,7 +56,7 @@ El sitio está diseñado para ayudar a los usuarios a encontrar lugares como res
    ```bash
    git clone https://github.com/rcuello/list-race-lab
    ```
-2. **Abrir el archivo `index.html` en un navegador**  
+2. **Abrir el archivo `src/index.html` en un navegador**  
 3. ¡Explora el sitio y personalízalo según tus necesidades!  
 
 ---
