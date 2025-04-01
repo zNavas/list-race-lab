@@ -17,10 +17,12 @@ El sitio está diseñado para ayudar a los usuarios a encontrar lugares como res
 ```bash
 📂 configs # Carpeta general de configuraciones para servidores y herramientas
 │── 📂 nginx/ # Configuración de Nginx
+   │── 📜 nginx.conf # Archivo principal de configuración de Nginx
    │── 📂 conf.d/ # Archivos de configuración adicionales de Nginx
-       │── 📜 nginx.conf # Archivo principal de configuración de Nginx
-       │── 📂 sites-available/
+       │── 📂 sites-available/  # Configuraciones de sitios disponibles
             │── 📜 cdn-config # Configuración específica del proxy inverso
+       │── 📂 sites-enabled/  # Enlaces simbólicos a sitios activos
+
 📂 src
 │── 📂 assets              # Recursos del sitio web
 │   │── 📂 css             # Archivos de estilos
