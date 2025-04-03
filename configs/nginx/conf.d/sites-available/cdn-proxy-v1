@@ -1,0 +1,39 @@
+server{
+     ### 🌐 CONFIGURACIÓN BÁSICA DEL SERVIDOR
+    listen 80;                    # Puerto de escucha HTTP
+    server_name _;                 # Acepta cualquier nombre de host o IP
+
+    ### 📁 CONFIGURACIÓN DEL PROXY PARA IMÁGENES
+    location /imagenes/ {
+         ### 🔄 CONEXIÓN CON AZURE STORAGE
+        proxy_pass https://stlistracecdnprodrc.blob.core.windows.net/imagenes/;
+        proxy_set_header Host stlistracecdnprodrc.blob.core.windows.net;
+
+        ### 💾 CONFIGURACIÓN DE CACHÉ
+        proxy_cache cdn_proxy;     # Activar sistema de caché definido en nginx.conf
+        proxy_cache_valid 200 302 60m;  # Respuestas exitosas: 60 minutos
+        proxy_cache_valid 404 1m;  # Errores 404: 1 minuto
+        proxy_cache_revalidate on; # Verificar con el backend si el contenido cambió
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504; # Usar caché antigua si Azure falla
+        proxy_cache_lock on;       # Evita múltiples solicitudes concurrentes al backend,es decir, esto evita que varias solicitudes concurrentes para el mismo recurso vayan a Azure simultáneamente.
+        
+
+        ### ⏱️ CONTROL DE EXPIRACIÓN DE CONTENIDO
+        expires 1d;               # Tiempo de expiración en navegadores: 1 día
+        add_header Cache-Control "public, max-age=86400";
+        add_header X-Cache-Status $upstream_cache_status; # Estado de la caché (HIT, MISS, BYPASS)
+    }
+
+     ### 🔄 MANEJO DE RECURSOS ESTÁTICOS ESPECIALES
+    location = /favicon.ico {
+        log_not_found off;          # No registrar errores 404
+        access_log off;             # No registrar accesos
+        return 204;                 # Respuesta vacía exitosa
+    }
+
+    ### 🛡️ FUTURAS MEJORAS EN SEGURIDAD (A IMPLEMENTAR POSTERIORMENTE)
+    # 🔹 Configuración HTTPS con Let's Encrypt o Azure Front Door
+    # 🔹 Protección contra hotlinking
+    # 🔹 Restricción de IPs y acceso con GeoIP
+    # 🔹 Implementación de HTTP/2 y HSTS
+}
